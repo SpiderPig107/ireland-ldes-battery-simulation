@@ -93,5 +93,5 @@ The study simulated three regulatory designs across three investor behavioural c
 2. Clone this repository:
    ```bash
    git clone https://github.com/SpiderPig107/ireland-ldes-battery-simulation.git
-3. Open Vensim_Model.mdl in Vensim.
+3. Open `Vensim_Model.mdl` in Vensim.
 4. Run simulations across scenarios by toggling REVENUE FLOOR FACTOR (0.7, 0.9, 1.0) and ENVELOPE RESTRICTION (0.2, 0.3, 0.7).
