@@ -6,7 +6,7 @@
 
 A quantitative System Dynamics simulation investigating how EirGrid's proposed Long-Duration Energy Storage (LDES) procurement mechanism influences private battery investment, wholesale price cannibalisation, renewable curtailment, and public policy costs in Ireland.
 
-Developed as a Master's thesis for the **MSc in Transition, Innovation and Sustainability Environments (TISE)** (Erasmus Mundus Scholar).
+Developed as a Master's thesis for the **MSc in Transition, Innovation and Sustainability Environments (TISE)**.
 
 ---
 
@@ -31,14 +31,14 @@ The conceptual model captures two key balancing feedback loops governing storage
 * **Generation-Side Price Cannibalisation (B1):** As battery discharge capacity scales, additional peak supply displaces expensive marginal gas generation, depressing peak selling prices and compressing arbitrage spreads.
 * **Demand-Side Price Cannibalisation (B2):** As battery charging scales during low-demand periods, additional demand absorbs excess renewables and raises trough buying prices, further eroding spreads.
 
-![Causal Loop Diagram](images/causal_loop_diagram.png)
+![Causal Loop Diagram](images/M1_Causal_Loop_Diagram.png)
 
 ### 2. Stock and Flow Diagram (SFD)
 The model was formulated and executed in **Vensim PLE** over a 12-year horizon (2027–2039) with a 500 MW total procurement cap:
 * **Stocks:** `BESS Capacity under Construction`, `Operational BESS Capacity`, `Cumulative Avoided Curtailment`, and `Cumulative Procurement Mechanism Cost`.
 * **Delays & Constraints:** 2-year first-order construction delay; Dixit-Pindyck irreversible investment hurdle rates parameterised via Sterman's 9-step table function methodology (`Investment Lookup Response`).
 
-![Stock and Flow Diagram](images/stock_and_flow_diagram.png)
+![Stock and Flow Diagram](images/M2_Stock_Flow_Diagram.png)
 
 ---
 
@@ -53,10 +53,15 @@ The study simulated three regulatory designs across three investor behavioural c
 | **Full Cost Recovery** | **1.00** | **0.70** | Heavy underwriting: 100% cost floor with 70% TSO operational control. |
 
 ---
-
 ## 📊 Key Simulation Findings
 
-![Simulation Results](images/simulation_results.png)
+| Finding 1: Operational BESS Capacity | Finding 2: Arbitrage Spread Compression |
+| :---: | :---: |
+| ![Operational BESS Capacity](images/Finding_1_Operational_BESS_Capacity.png) | ![Arbitrage Spread Compression](images/Finding_2_Arbitrage_Spread.png) |
+
+| Finding 3: Cumulative Avoided Curtailment | Finding 4: Cumulative Policy Cost |
+| :---: | :---: |
+| ![Avoided Curtailment](images/Finding_3_Cumulative_Avoided_Curtailment.png) | ![Policy Cost](images/Finding_4_Cost_No_Profit_Sharing.png) |
 
 1. **The Light-Touch Paradox (Baseline €60/MWh LCOS):**
    * Under baseline capital costs, **Minimal Cost Recovery** deployed the highest operational capacity by 2039 (**470.4 MW** vs 410.9 MW for Balanced).
@@ -76,8 +81,8 @@ The study simulated three regulatory designs across three investor behavioural c
 
 ## 📂 Repository Contents
 
-* `System_Dynamics_LDES_Ireland.mdl`: Complete Vensim model equations, variables, and lookup table functions.
-* `LDES_Thesis_Defense_Presentation.pdf`: Thesis defense slide deck outlining methodology, equations, and scenario runs.
+* `Vensim_Model.mdl`: Complete Vensim model equations, variables, and lookup table functions.
+* `Thesis_Defense_Slides.pdf`: Thesis defense slide deck outlining methodology, equations, and scenario runs.
 * `images/`: High-resolution exports of the Causal Loop Diagram, Stock & Flow Diagram, and simulation output charts.
 
 ---
@@ -88,3 +93,5 @@ The study simulated three regulatory designs across three investor behavioural c
 2. Clone this repository:
    ```bash
    git clone https://github.com/SpiderPig107/ireland-ldes-battery-simulation.git
+3. Open Vensim_Model.mdl in Vensim.
+4. Run simulations across scenarios by toggling REVENUE FLOOR FACTOR (0.7, 0.9, 1.0) and ENVELOPE RESTRICTION (0.2, 0.3, 0.7).
