@@ -83,6 +83,7 @@ The study simulated three regulatory designs across three investor behavioural c
 
 * `Vensim_Model.mdl`: Complete Vensim model equations, variables, and lookup table functions.
 * `Thesis_Defense_Slides.pdf`: Thesis defense slide deck outlining methodology, equations, and scenario runs.
+* `parameter_calibration.ipynb`: Python data processing notebook calibrating market price bounds, mid-merit ratios, and cannibalisation scaling from historical I-SEM data.
 * `images/`: High-resolution exports of the Causal Loop Diagram, Stock & Flow Diagram, and simulation output charts.
 
 ---
