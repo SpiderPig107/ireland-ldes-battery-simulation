@@ -1,0 +1,681 @@
+{UTF-8}
+Project Initiation Rate=IF THEN ELSE(
+		MAX( 0, BESS Capacity under Construction) + Operational BESS Capacity >= REFERENCE BESS CAPACITY\
+		, 
+		0, 
+		MAX INITIATION RATE * "INVESTMENT LOOKUP RESPONSE (FLAT)"(Revenue to Cost Ratio)
+		)
+	~	MW/Year
+	~		|
+
+Procurement Cost=IF THEN ELSE(
+	Conservative Revenue Floor for 1 Battery > Enveloped Annual Revenue for 1 Battery, 
+	(Conservative Revenue Floor for 1 Battery - Enveloped Annual Revenue for 1 Battery) \
+		* (Operational BESS Capacity / REFERENCE BATTERY SIZE), 
+	0)
+	~	Euro/Year
+	~	Annual net fiscal cost to EirGrid. Positive = government is losing money \
+		paying out revenue floor. Negative = government receiving revenue because \
+		annual arbitrage revenue is above revenue floor.
+	|
+
+Curtailment Reduction Rate=MIN (	"Curtailment (Without BESS)", 
+		Operational BESS Capacity * CHARGING DURATION*CYCLES PER DAY * 365 * CURTAILMENT CAPTURE RATE
+	)
+	~	MWh/Year
+	~	Your 4-hour, 100 MW battery has 400 MWh of capacity. You’ve already set CYCLES PER \
+		DAY = 0.8. What that means in practice: each day, the battery absorbs 400 \
+		MWh × 0.8 = 320 MWh from the grid during charging.
+		Now, the whole point of the LDES service is to charge during curtailment events \
+		(that’s what “re-dispatch” means in EirGrid’s proposal). So \
+		charging = absorbing curtailment. Per year, that’s 320 MWh × 365 = \
+		116,800 MWh = 116.8 GWh per 100 MW battery.
+		
+		at 40% restriction, only 40% of the battery's physical capacity is \
+		directed by the TSO toward curtailment absorption. The rest is for free \
+		arbitrage.
+	|
+
+"INVESTMENT LOOKUP RESPONSE (FLAT)"([(0,0)-(2.6,1)],
+	(0,0),
+	(0.2,0.002),
+	(0.4,0.007),
+	(0.6,0.018),
+	(0.8,0.039),
+	(1,0.08),
+	(1.2,0.151),
+	(1.4,0.256),
+	(1.6,0.391),
+	(1.8,0.546),
+	(2,0.711),
+	(2.2,0.861),
+	(2.4,0.961),
+	(2.6,1))
+	~	Dimensionless
+	~	How investors translate risk-adjusted return into new project pipeline as \
+		a fraction of Max Pipeline Rate. Below 1.0 (break-even) nothing gets \
+		built. Ramps up above, saturates at high returns.
+	|
+
+"INVESTMENT LOOKUP RESPONSE (STEEP)"([(0,0)-(2.6,1)],
+	(0,0),
+	(0.2,0.001),
+	(0.4,0.004),
+	(0.6,0.012),
+	(0.8,0.03),
+	(1,0.08),
+	(1.2,0.23),
+	(1.4,0.64),
+	(1.6,0.89),
+	(1.8,0.96),
+	(2,0.98),
+	(2.2,0.991),
+	(2.4,0.997),
+	(2.6,1))
+	~	Dimensionless
+	~	How investors translate risk-adjusted return into new project pipeline as \
+		a fraction of Max Pipeline Rate. Below 1.0 (break-even) nothing gets \
+		built. Ramps up above, saturates at high returns.
+	|
+
+Average Buying Price=( MIN BUYING PRICE + (MAX BUYING PRICE - MIN BUYING PRICE) * (1 \
+		- Effective Curtailment/ "Curtailment (Without BESS)") ) * ( "Curtailment (Without BESS)"\
+		 / BASE CURTAILMENT DATA ) ^ CURTAILMENT PRICE ELASTICITY
+	~	Euro/MWh
+	~	The average price the battery charges at. The average buying price starts \
+		at its floor, then climbs toward its ceiling depending on how much \
+		curtailment has been absorbed.
+	|
+
+"Revenue to Cost Ratio (Without Revenue Floor)"=Potential Annual Arbitrage Revenue for 1 Battery\
+		/Expected Annual Costs
+	~	Dimensionless
+	~		|
+
+CURTAILMENT PRICE ELASTICITY=- 0.0626
+	~	Dimensionless
+	~		|
+
+"ENVELOPE RESTRICTION (SENSITIVITY)"=0.2
+	~	Dimensionless
+	~	When ENVELOPE RESTRICTION (SENSITIVITY) = 0.4, it feeds into:
+		Potential Annual Arbitrage Revenue for 1 Battery * (1 - 0.4)
+		
+		So the battery only earns 60% of its unconstrained arbitrage revenue. It \
+		means the TSO reduced the earnings potential by 40%
+	|
+
+Curtailment Reduction Percentage=Curtailment Reduction Rate/ "Curtailment (Without BESS)"
+	~	Percentage
+	~		|
+
+Project Completion Rate=BESS Capacity under Construction/Construction Time
+	~	MW/Year
+	~	Projects exit construction after Construction Time years.
+	|
+
+Conservative Revenue Floor for 1 Battery="LCOS (STARTING POINT)"*ANNUAL STORAGE OUTPUT\
+		*"REVENUE FLOOR FACTOR (SENSITIVITY)"
+	~	Euro/Year
+	~		|
+
+CURTAILMENT CAPTURE RATE=0.75
+	~	Dimensionless
+	~		|
+
+MIN BUYING PRICE=81.05
+	~	Euro/MWh
+	~	Min Buying Price is the average of the four cheapest hours each day across 2023 - \
+		2025, reflecting the optimal charging strategy of a rational 4-hour \
+		battery operator.
+		
+		
+		Where to get the data:
+		- Hourly day ahead prices (select the cheapest 4 hours everyday and \
+		average it)
+	|
+
+"REVENUE FLOOR FACTOR (SENSITIVITY)"=0.7
+	~	Dimensionless
+	~	SCENARIO INPUT. 0 = no floor, 1 = full cost recovery.
+	|
+
+CURTAILMENT ANNUAL GROWTH RATE=0.28
+	~	Dimensionless
+	~	Phase 1 - 80% renewable reached by 2030 - look at ECP 2.4 Scenario FG ECP 3.1 \
+		Offshore. 
+		Phase 2 - slow growth at 2% until 2039
+	|
+
+Effective Curtailment=MAX(0, "Curtailment (Without BESS)"- Curtailment Reduction Rate\
+		)
+	~	MWh/Year
+	~	Annual curtailment remaining after LDES absorbs what it can. This is the \
+		annual feedback signal to AVERAGE BUYING PRICE. Bounded at zero.
+	|
+
+"Curtailment (Without BESS)"=BASE CURTAILMENT DATA * (1 + CURTAILMENT ANNUAL GROWTH RATE\
+		) ^ (Time - 2027)
+	~	MWh/Year
+	~		|
+
+BESS Capacity under Construction= INTEG (Project Initiation Rate-Project Completion Rate\
+		,
+		0)
+	~	MW
+	~		|
+
+"Levelised Cost of Storage (LCOS)"="LCOS (STARTING POINT)" * (1 - 0.02736) ^ (Time - \
+		2027)
+	~	Euro/MWh
+	~	https://docs.nrel.gov/docs/fy25osti/93281.pdf
+		Table 2 - Appendix (page 16)
+		
+		Low scenario 
+		2027 - USD 243
+		2037 - USD 142
+		
+		CAGR =  (142/243)^(1/10) - 1 = -5.2% per year
+		
+		Final value = - 0.052
+		
+		
+		
+		Lazard Levelized Cost of Storage—Key Assumptions, page 43
+		
+		Charging Cost Escalator - 1.97%
+		
+		Final value = 0.02
+	|
+
+"LCOS (STARTING POINT)"=130
+	~	Euro/MWh
+	~	Estimates taken from benchmark from Ember Report on How cheap are batteries.
+		
+		https://ember-energy.org/app/uploads/2025/12/How-cheap-is-battery-storage.pdf
+		
+		page 13
+		
+		
+		65
+	|
+
+REFERENCE BATTERY SIZE=100
+	~	MW
+	~	Power capacity of the reference battery unit used for per-project
+		revenue and cost calculations.
+		One reference battery = 100 MW / 400 MWh (4-hour duration).
+		Used as denominator in Procurement Cost to correctly scale
+		from per-battery costs to whole-fleet costs.
+		Do NOT confuse with REFERENCE BESS CAPACITY (500 MW).
+	|
+
+Expected Annual Costs="Levelised Cost of Storage (LCOS)" * ANNUAL STORAGE OUTPUT
+	~	Euro/Year
+	~		|
+
+Expected Annual Revenue for 1 Battery=MAX(Revenue Floor for 1 Battery, Enveloped Annual Revenue for 1 Battery\
+		)
+	~	Euro/Year
+	~		|
+
+Revenue Floor for 1 Battery="Levelised Cost of Storage (LCOS)" * ANNUAL STORAGE OUTPUT\
+		 * "REVENUE FLOOR FACTOR (SENSITIVITY)"
+	~	Euro/Year
+	~	Guaranteed revenue from the revenue floor mechanism.
+	|
+
+Enveloped Annual Revenue for 1 Battery=Potential Annual Arbitrage Revenue for 1 Battery\
+		 * (1 - "ENVELOPE RESTRICTION (SENSITIVITY)")
+	~	Euro/Year
+	~		|
+
+Revenue to Cost Ratio=Expected Annual Revenue for 1 Battery/Expected Annual Costs
+	~	Dimensionless
+	~	Revenue-to-cost ratio. 1.0 = break-even; above 1 is profitable; below 1 is \
+		loss-making.
+	|
+
+Cumulative Avoided Curtailment= INTEG (Curtailment Reduction Rate,
+		0)
+	~	MWh
+	~		|
+
+Cumulative Procurement Mechanism Cost= INTEG (Procurement Cost,
+		0)
+	~	Euro
+	~	Total of the net fiscal cost of the procurement mechanism to EirGrid from \
+		the start of the simulation. Positive = net cost. Negative = net revenue \
+		to EirGrid.
+	|
+
+Abitrage Spread=Average Selling Price-Average Buying Price
+	~	Euro/MWh
+	~	Difference between Average Selling Price and Average Buying Price.
+	|
+
+Potential Annual Arbitrage Revenue for 1 Battery=ENERGY CAPACITY * CYCLES PER DAY * 365\
+		 * Abitrage Spread
+	~	Euro/Year
+	~	Annual arbitrage earnings per 100 MW / 400 MWh project (before revenue \
+		floor).
+	|
+
+MAX INITIATION RATE=500
+	~	MW/Year
+	~	The maximum limit on new capacity the industry can initiate per year.
+	|
+
+MAX SELLING PRICE=162.98
+	~	Euro/MWh
+	~	Max Selling Price is the price a battery operator receives when selling electricity \
+		during peak demand periods — before any cannibalisation from other BESS \
+		occurs. It’s the best case selling price, representing normal peak \
+		market conditions.
+		
+		Where to get data:
+		- hourly day ahead price (average of the 4 most expensive hours each day)
+	|
+
+Average Selling Price=MAX(MIN SELLING PRICE, MAX SELLING PRICE - (MAX SELLING PRICE -\
+		 MIN SELLING PRICE) * Operational BESS Capacity/REFERENCE BESS CAPACITY)
+	~	Euro/MWh
+	~	The average selling price is the price a battery operator receives when discharging \
+		electricity into the grid, and it falls as more BESS capacity is built.
+		
+		It starts at its MAX SELLING PRICE — when no BESS exists and peak prices \
+		are undisturbed. As more batteries come online and all discharge during \
+		the same peak windows, they flood that period with supply and push prices \
+		down. The more BESS that gets built, the lower the selling price drops. \
+		But it can never fall below the MIN SELLING PRICE no matter how much \
+		capacity is built.
+	|
+
+MIN SELLING PRICE=112.07
+	~	Euro/MWh
+	~	It’s the price your battery receives when the market is at its worst for selling \
+		— when lots of BESS are all discharging at the same time and pushing \
+		peak prices down.
+		
+		Min Selling Price is fundamentally a future state that doesn’t exist in your \
+		historical data. It represents a market condition — 500 MW of BESS all \
+		discharging simultaneously — that hasn’t happened in Ireland yet. No \
+		amount of clever filtering of your existing dataset can truly capture that.
+		
+		https://www.pv-magazine.de/2023/07/11/preiseffekte-durch-den-ausbau-von-batteriespeic\
+		hern-teil-3-arbitrage-in-der-day-ahead-auktion/
+		says that the base price pushes up from 115 to 120 with 100MW of battery.
+		
+		Germany
+		The German market is huge. 100 MW of battery is a tiny drop in a very large ocean. \
+		It represents 0.5% of total market volume. Yet even that tiny share caused \
+		a 7.8% drop in peak prices. That’s already surprisingly large.
+		Ireland
+		Ireland’s market is much smaller. 500 MW of battery is a much bigger drop in a \
+		much smaller ocean. So the price impact will be proportionally larger.
+		
+		Steps to Carry Out:
+		1. Calculate Ireland’s market share Get the average hourly demand in MWh for \
+		2023-2025
+		Ireland’s market share = 100 / average hourly Irish demand × 100
+		2. Compare Ireland’s market share of 100 MW to Germany’s Germany: 100 MW / \
+		20,000 MWh = 0.5% market share → caused 7.8% (EUR 16) decrease in \
+		selling price (discharge) Ireland: 100 MW / ?? MWh = ?? market share \
+		→ caused ??% decrease in selling price (discharge)
+		Concentration ratio = Ireland’s market share / Germany’s market share (0.5%)
+		This tells you how many times more concentrated 100 MW is in Ireland versus Germany.
+		3. Compare Ireland’s mid merit share to Germany’s Germany has much higher mid \
+		merit generation capacity, which gives BESS more room to compress prices \
+		because BESS can displace expensive gas plants easier and move it down to \
+		a mid merit plant.
+		Mid merit ratio = Ireland’s mid merit share / Germany’s mid merit share
+		4. Get the Adjusted Cannibalisation Rate for 100 MW of BESS for Ireland
+		Adjusted cannibalisation = 7.8% * Mid merit ratio * Concentration ratio
+		5. Scale for 500 MW Multiply each result by 5 since I have 500 MW not 100 MW.
+		6. Calculate Min Selling Price
+		Min Selling Price = Max Selling Price (162.98) - scaled €/MWh reduction
+	|
+
+MAX BUYING PRICE=103.76
+	~	Euro/MWh
+	~	The price your battery charges at when all curtailment has been absorbed \
+		and those cheap surplus windows no longer exist. Essentially just the \
+		normal average wholesale electricity price in Ireland during off-peak \
+		hours — what you’d pay when there’s no surplus pushing prices down.
+	|
+
+CHARGING DURATION=4
+	~	Hours/Cycle
+	~	Battery duration at rated power. Fixed at 4 hours for this thesis.
+	|
+
+REFERENCE BESS CAPACITY=500
+	~	MW
+	~	The total amount of BESS you expect to be built by the end of your \
+		simulation. It’s the “fully built out” scenario — the point at \
+		which cannibalisation is at its maximum.
+	|
+
+ANNUAL STORAGE OUTPUT=105120
+	~	MWh/Year
+	~	MWh delivered annually by a 100 MW / 400 MWh battery cycling at 0.9/day, 350 \
+		days/year.
+		
+		The Ember calculator derived your LCOS of $130/MWh using utilisation = 0.8 \
+		and efficiency = 0.9, which gives Year-1 energy of 262.8 MWh per 1 MWh of \
+		storage capacity (0.8 × 0.9 × 365 = 262.8). Scaled to your 400 MWh \
+		battery, that implies 105,120 MWh/yr of annual output.
+	|
+
+BASE CURTAILMENT DATA=258000
+	~	MWh/Year
+	~	Constraints represent dispatch down applied to manage localised congestion on the \
+		grid, whereby variable generator output is constrained to stay within \
+		overload limits of the transmission lines. This is applied at a nodal \
+		level.
+		
+		Ireland Solar Constraints in 2024 - 32,006 MWh (4.3% of Total Available Energy) 
+		EirGrid Annual Renewable Energy Constraint and Curtailment Report 2024, p23 
+		https://cms.eirgrid.ie/sites/default/files/publications/Annual-Renewable-Constraint-a\
+		nd-Curtailment-Report-2024-V1.0.pdf 
+		
+		Ireland Wind Curtailment in 2024 - 627,440 MWh (5.0% of Total Available Energy)
+		EirGrid Annual Renewable Energy Constraint and Curtailment Report 2024, p20
+		
+		Total Constraints = 659,446 MWh
+	|
+
+Retirement Rate=0
+	~	MW/Year
+	~	Set to zero: LDES assets have 20+ year lives, so no retirements in the \
+		2027-2032 horizon.
+	|
+
+Construction Time=2
+	~	Year
+	~	Average time from contract signing to operation for battery projects.
+	|
+
+CYCLES PER DAY=0.8
+	~	Dimensionless
+	~	1 cycle means the battery charges for 4 hours and discharges for 4 hours per day. \
+		Set to 0.9 because of efficiency issues. This is used by EirGrid \
+		https://cms.eirgrid.ie/sites/default/files/publications/ECP-2.4-Solar-and-W\
+		ind-Constraints-Report-Assumptions-and-Methodology-v1.1.pdf
+		
+		See p 19
+	|
+
+ENERGY CAPACITY=400 * 0.9
+	~	MWh
+	~	The battrery size for a 4 hour battery.
+	|
+
+"INVESTMENT LOOKUP RESPONSE (BASE)"([(0,0)-(2.6,1)],
+	(0,0),
+	(0.2,0.005),
+	(0.4,0.015),
+	(0.6,0.03),
+	(0.8,0.05),
+	(1,0.08),
+	(1.2,0.16),
+	(1.4,0.35),
+	(1.6,0.58),
+	(1.8,0.77),
+	(2,0.88),
+	(2.2,0.95),
+	(2.4,0.985),
+	(2.6,1))
+	~	Dimensionless
+	~	How investors translate risk-adjusted return into new project pipeline as \
+		a fraction of Max Pipeline Rate. Below 1.0 (break-even) nothing gets \
+		built. Ramps up above, saturates at high returns.
+	|
+
+Operational BESS Capacity= INTEG (Project Completion Rate-Retirement Rate,
+		0)
+	~	MW
+	~		|
+
+"Operations & Maintenance (Euro/ MWh)"=6.8
+	~	Euro/ MWh
+	~		|
+
+********************************************************
+	.Control
+********************************************************~
+		Simulation Control Parameters
+	|
+
+FINAL TIME  = 2040
+	~	Year
+	~	The final time for the simulation.
+	|
+
+INITIAL TIME  = 2027
+	~	Year
+	~	The initial time for the simulation.
+	|
+
+SAVEPER  = 
+        TIME STEP
+	~	Year [0,?]
+	~	The frequency with which output is stored.
+	|
+
+TIME STEP  = 0.0078125
+	~	Year [0,?]
+	~	The time step for the simulation.
+	|
+
+\\\---/// Sketch information - do not modify anything except names
+V300  Do not put anything below this section - it will be ignored
+*View 1
+$-1--1--1,0,|12||-1--1--1|-1--1--1|-1--1--1|-1--1--1|-1--1--1|96,96,119,2
+10,1,BESS Capacity under Construction,-612,74,54,26,3,3,0,0,-1,0,0,0,0,0,0,0,0,0
+12,2,48,-924,77,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,3,5,2,100,0,0,22,0,192,0,-1--1--1,,1|(-855,77)|
+1,4,5,1,4,0,0,22,0,192,0,-1--1--1,,1|(-725,77)|
+11,5,0,-790,77,6,8,34,3,0,0,1,0,0,0,0,0,0,0,0,0
+10,6,Project Initiation Rate,-790,111,57,26,40,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,7,Operational BESS Capacity,-212,77,47,26,3,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,8,10,1,100,0,0,22,0,192,0,-1--1--1,,1|(-487,75)|
+1,9,10,7,4,0,0,22,0,192,0,-1--1--1,,1|(-331,75)|
+11,10,0,-409,75,6,8,34,3,0,0,1,0,0,0,0,0,0,0,0,0
+10,11,Project Completion Rate,-409,109,63,26,40,3,0,0,-1,0,0,0,0,0,0,0,0,0
+12,12,48,59,77,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,13,15,7,100,0,0,22,0,192,0,-1--1--1,,1|(-115,77)|
+1,14,15,12,4,0,0,22,0,192,0,-1--1--1,,1|(-2,77)|
+11,15,0,-58,77,6,8,34,3,0,0,1,0,0,0,0,0,0,0,0,0
+10,16,Retirement Rate,-58,111,46,26,40,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,17,Revenue to Cost Ratio,-793,201,61,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,18,Revenue Floor for 1 Battery,-1144,273,46,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,19,Potential Annual Arbitrage Revenue for 1 Battery,-937,459,69,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,20,Expected Annual Costs,-705,274,60,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,21,ANNUAL STORAGE OUTPUT,-538,272,60,26,8,3,0,2,-1,1,0,0,0-0-0,0-0-0,|||35-142-107,0,0,0,0,0,0
+1,22,21,20,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,23,20,17,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,24,Average Selling Price,-778,617,64,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,25,Average Buying Price,-488,532,63,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,26,ENERGY CAPACITY,-1082,538,49,26,8,3,0,2,-1,1,0,0,0-0-0,0-0-0,|||35-142-107,0,0,0,0,0,0
+10,27,CYCLES PER DAY,-941,546,46,26,8,3,0,2,-1,1,0,0,0-0-0,0-0-0,|||35-142-107,0,0,0,0,0,0
+1,28,26,19,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,29,27,19,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,30,25,52,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,31,24,52,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,32,ANNUAL STORAGE OUTPUT,-1146,342,66,13,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+1,33,32,18,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,34,"REVENUE FLOOR FACTOR (SENSITIVITY)",-1137,185,66,26,8,3,0,2,-1,1,0,0,0-0-0,0-0-0,|||255-0-0,0,0,0,0,0,0
+1,35,34,18,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,36,"ENVELOPE RESTRICTION (SENSITIVITY)",-1129,433,64,26,8,3,0,2,-1,1,0,0,0-0-0,0-0-0,|||255-0-0,0,0,0,0,0,0
+10,37,Construction Time,-413,-36,49,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,38,37,10,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+12,39,48,-348,261,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,40,41,39,100,0,0,22,0,192,0,-1--1--1,,1|(-280,261)|
+11,41,0,-216,261,6,8,34,3,0,0,1,0,0,0,0,0,0,0,0,0
+10,42,Curtailment Reduction Rate,-216,295,59,26,40,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,43,7,41,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,44,BASE CURTAILMENT DATA,-94,603,59,26,8,3,0,2,-1,1,0,0,0-0-0,0-0-0,|||35-142-107,0,0,0,0,0,0
+10,45,"INVESTMENT LOOKUP RESPONSE (BASE)",-523,-275,58,26,8,3,0,2,-1,1,0,0,0-0-0,0-0-0,|||35-142-107,0,0,0,0,0,0
+10,46,CYCLES PER DAY,-305,173,50,13,8,2,0,3,-1,1,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+1,47,46,41,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,48,CHARGING DURATION,-125,175,59,26,8,3,0,2,-1,1,0,0,0-0-0,0-0-0,|||35-142-107,0,0,0,0,0,0
+1,49,48,41,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,50,Effective Curtailment,-216,532,55,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,51,42,50,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,52,Abitrage Spread,-776,533,46,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,53,52,19,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,54,50,25,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,55,MAX BUYING PRICE,-634,630,52,26,8,3,0,2,-1,1,0,0,0-0-0,0-0-0,|||35-142-107,0,0,0,0,0,0
+10,56,MIN BUYING PRICE,-489,630,51,26,8,3,0,2,-1,1,0,0,0-0-0,0-0-0,|||35-142-107,0,0,0,0,0,0
+1,57,55,25,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,58,MAX SELLING PRICE,-832,699,53,26,8,3,0,2,-1,1,0,0,0-0-0,0-0-0,|||35-142-107,0,0,0,0,0,0
+10,59,MIN SELLING PRICE,-946,701,52,26,8,3,0,2,-1,1,0,0,0-0-0,0-0-0,|||35-142-107,0,0,0,0,0,0
+10,60,Operational BESS Capacity,-613,695,50,20,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+10,61,REFERENCE BESS CAPACITY,-718,696,46,26,8,3,0,2,-1,1,0,0,0-0-0,0-0-0,|||35-142-107,0,0,0,0,0,0
+1,62,59,24,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,63,58,24,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,64,60,24,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,65,61,24,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,66,MAX INITIATION RATE,-945,201,57,26,3,3,0,3,-1,1,0,0,255-255-255,0-0-0,|||35-142-107,0,0,0,0,0,0
+1,67,66,6,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,68,Cumulative Avoided Curtailment,-19,261,53,26,3,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,69,41,68,4,0,0,22,0,192,0,-1--1--1,,2|(-72,261)|(-72,261)|
+10,70,Cumulative Procurement Mechanism Cost,-1869,152,65,26,3,3,0,0,-1,0,0,0,0,0,0,0,0,0
+12,71,48,-1511,156,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,72,74,71,100,0,0,22,0,192,0,-1--1--1,,1|(-1587,156)|
+1,73,74,70,4,0,0,22,0,192,0,-1--1--1,,1|(-1734,156)|
+11,74,0,-1658,156,6,8,34,3,0,0,1,0,0,0,0,0,0,0,0,0
+10,75,Procurement Cost,-1658,190,51,26,40,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,76,Enveloped Annual Revenue for 1 Battery,-938,370,57,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,77,19,76,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,78,Expected Annual Revenue for 1 Battery,-939,273,57,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,79,78,17,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,80,76,78,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,81,36,76,0,0,0,0,0,64,0,-1--1--1,,1|(0,0)|
+1,82,17,6,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,83,"Levelised Cost of Storage (LCOS)",-705,359,65,26,8,3,0,0,-1,1,0,0,0,0,0,0,0,0
+10,84,Time,-822,298,18,13,8,3,1,0,-1,0,0,0,0,0,0,0,0,0
+10,85,INITIAL TIME,-821,351,44,10,8,2,1,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+1,86,85,84,0,1,0,0,0,0,1,-1--1--1,,1|(0,0)|
+10,87,Enveloped Annual Revenue for 1 Battery,-1497,282,51,20,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+1,88,87,75,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,89,18,78,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,90,Operational BESS Capacity,-1726,73,50,20,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+1,91,90,74,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,92,83,20,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,93,"Levelised Cost of Storage (LCOS)",-1280,275,55,20,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+1,94,93,18,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,95,REFERENCE BATTERY SIZE,-1566,74,66,26,8,3,0,2,-1,1,0,0,0-0-0,0-0-0,|||35-142-107,0,0,0,0,0,0
+1,96,95,74,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,97,"LCOS (STARTING POINT)",-705,441,63,26,8,3,0,2,-1,1,0,0,0-0-0,0-0-0,|||35-142-107,0,0,0,0,0,0
+10,98,Time,-580,356,24,13,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+1,99,97,83,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,100,98,83,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,101,CURTAILMENT ANNUAL GROWTH RATE,66,320,62,26,8,3,0,0,-1,1,0,0,0,0,0,0,0,0
+10,102,"Curtailment (Without BESS)",-94,403,55,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,103,102,42,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,104,102,50,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,105,Time,65,396,24,13,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+1,106,101,102,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,107,44,102,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,108,105,102,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,109,Curtailment Reduction Percentage,42,560,59,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,110,102,109,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,111,7,5,1,0,0,0,0,192,0,-1--1--1,,1|(-471,-75)|
+10,112,REFERENCE BESS CAPACITY,-891,20,49,20,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+1,113,112,5,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,114,1,5,1,0,0,0,0,192,0,-1--1--1,,1|(-678,40)|
+12,115,0,682,254,300,200,0,15,0,0,2,0,0,0,0,0,0,0,0,0
+Operational BESS Capacity,Graph
+12,116,0,1303,-151,300,200,0,15,0,0,2,0,0,0,0,0,0,0,0,0
+Average Buying Price,Graph
+12,117,0,1304,254,300,200,0,15,0,0,2,0,0,0,0,0,0,0,0,0
+Average Selling Price,Graph
+12,118,0,1305,661,300,200,0,15,0,0,2,0,0,0,0,0,0,0,0,0
+Abitrage Spread,Graph
+12,119,0,1306,1069,300,200,0,15,0,0,2,0,0,0,0,0,0,0,0,0
+Potential Annual Arbitrage Revenue for 1 Battery,Graph
+12,120,0,660,-406,179,27,8,7,0,24,-1,0,0,0,0-0-0,0-0-0,|30|B|0-0-0,0,0,0,0,0,0
+Investment Metrics
+12,121,0,1316,-399,226,32,8,7,0,24,-1,0,0,0,0-0-0,0-0-0,|30|B|0-0-0,0,0,0,0,0,0
+Business Operation Metrics
+12,122,0,1944,-405,226,32,8,7,0,24,-1,0,0,0,0-0-0,0-0-0,|30|B|0-0-0,0,0,0,0,0,0
+Grid Metrics
+12,123,0,2573,-153,300,200,0,15,0,0,2,0,0,0,0,0,0,0,0,0
+Procurement Cost,Graph
+12,124,0,2573,260,300,200,0,15,0,0,2,0,0,0,0,0,0,0,0,0
+Cumulative Procurement Mechanism Cost,Graph
+12,125,0,2594,-404,226,32,8,7,0,24,-1,0,0,0,0-0-0,0-0-0,|30|B|0-0-0,0,0,0,0,0,0
+Policy Cost Metrics (Rough Estimation)
+10,126,Conservative Revenue Floor for 1 Battery,-1658,283,58,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,127,"LCOS (STARTING POINT)",-1787,362,48,20,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+10,128,ANNUAL STORAGE OUTPUT,-1656,362,53,20,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+10,129,"REVENUE FLOOR FACTOR (SENSITIVITY)",-1520,358,60,20,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+1,130,127,126,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,131,128,126,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,132,129,126,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+12,133,0,1943,-149,300,200,0,15,0,0,2,0,0,0,0,0,0,0,0,0
+Curtailment Reduction Percentage,Graph
+10,134,CURTAILMENT CAPTURE RATE,-325,378,63,26,8,3,0,2,-1,1,0,0,0-0-0,0-0-0,|||35-142-107,0,0,0,0,0,0
+1,135,134,42,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,136,1,10,1,0,0,0,0,192,0,-1--1--1,,1|(-513,30)|
+10,137,Curtailment Reduction Rate,43,640,62,20,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+1,138,137,109,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,139,CURTAILMENT PRICE ELASTICITY,-353,623,55,26,8,3,0,2,-1,1,0,0,0-0-0,0-0-0,|||35-142-107,0,0,0,0,0,0
+10,140,"Revenue to Cost Ratio (Without Revenue Floor)",-814,385,63,26,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,141,19,140,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,142,20,140,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+12,143,0,681,659,301,200,8,15,0,0,2,0,0,0,0,0,0,0,0,0
+"Revenue to Cost Ratio (Without Revenue Floor)",Graph
+1,144,56,25,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,145,139,25,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+1,146,44,25,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+10,147,"Curtailment (Without BESS)",-488,454,58,20,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|||128-128-128,0,0,0,0,0,0
+1,148,147,25,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+12,149,0,680,-151,300,200,0,15,0,0,2,0,0,0,0,0,0,0,0,0
+BESS Capacity under Construction,Graph
+10,150,"INVESTMENT LOOKUP RESPONSE (STEEP)",-681,-247,58,26,8,3,0,2,-1,1,0,0,0-0-0,0-0-0,|||35-142-107,0,0,0,0,0,0
+10,151,"INVESTMENT LOOKUP RESPONSE (FLAT)",-655,199,58,26,8,3,0,2,-1,1,0,0,0-0-0,0-0-0,|||35-142-107,0,0,0,0,0,0
+12,152,0,680,1067,300,200,0,15,0,0,2,0,0,0,0,0,0,0,0,0
+Revenue to Cost Ratio,Graph
+12,153,0,1943,259,300,200,0,15,0,0,2,0,0,0,0,0,0,0,0,0
+Cumulative Avoided Curtailment,Graph
+1,154,126,75,0,0,0,0,0,64,0,-1--1--1,,1|(0,0)|
+1,155,151,6,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
+///---\\\
+:L<%^E!@
+1:Balanced_High_LCOS_Lookup_Base.vdfx
+1:Full_Cost_High_LCOS_Lookup_Base.vdfx
+1:Min_Cost_High_LCOS_Lookup_Base.vdfx
+4:Time
+5:"LCOS (STARTING POINT)"
+9:Min_Cost_Lookup_Flat
+19:119,0
+24:2027
+25:2040
+26:2040
+23:0
+15:0,0,0,1,0,0
+27:0,
+34:0,
+42:0
+72:0
+73:0
+95:0
+96:0
+97:0
+77:0
+78:0
+102:1
+93:0
+94:0
+92:0
+91:0
+90:0
+87:0
+75:
+43:
+103:8,8,8,3,8
+105:1,0,0,0,0,0,0,0,0,0
+104:Vensim Sans|12||0-0-0|0-0-0|-1--1--1|0-0-255|192-192-192|-1--1--1
