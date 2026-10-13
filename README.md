@@ -12,7 +12,7 @@ Developed as a Master's thesis for the **MSc in Transition, Innovation and Susta
 
 ## 📌 Context & Problem Statement
 
-Ireland has committed to generating at least **80% of its electricity from renewable sources by 2030**. However, high penetration of non-synchronous wind and solar has driven rapid increases in renewable curtailment (reaching over 659 GWh in 2024, with projections up to 45% without mitigation). 
+Ireland has committed to generating at least **80% of its electricity from renewable sources by 2030**. However, high penetration of non-synchronous wind and solar has driven rapid increases in renewable curtailment. 
 
 While 4-hour Battery Energy Storage Systems (BESS) are critical for shifting surplus clean energy to peak demand periods, EirGrid's analysis identifies a **"missing money" problem**: projected merchant revenues from wholesale energy arbitrage alone are insufficient to recover the full Levelised Cost of Storage (LCOS).
 
