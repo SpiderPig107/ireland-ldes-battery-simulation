@@ -14,7 +14,7 @@ Developed as a Master's thesis for the **MSc in Transition, Innovation and Susta
 
 Ireland has committed to generating at least **80% of its electricity from renewable sources by 2030**. However, high penetration of non-synchronous wind and solar has driven rapid increases in renewable curtailment. 
 
-While 4-hour Battery Energy Storage Systems (BESS) are critical for shifting surplus clean energy to peak demand periods, EirGrid's analysis identifies a **"missing money" problem**: projected merchant revenues from wholesale energy arbitrage alone are insufficient to recover the full Levelised Cost of Storage (LCOS).
+While long-duration Battery Energy Storage Systems (BESS) are critical for shifting surplus clean energy to peak demand periods, EirGrid's analysis identifies a **"missing money" problem**: projected merchant revenues from wholesale energy arbitrage alone are insufficient to recover the full Levelised Cost of Storage (LCOS).
 
 To bridge this gap, EirGrid proposed a procurement mechanism combining two countervailing policy instruments:
 1. **A Revenue Floor:** Guarantees a minimum annual income to protect developers from downside revenue risk.
